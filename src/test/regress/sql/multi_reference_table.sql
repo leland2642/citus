@@ -666,7 +666,6 @@ WHERE
 	colocated_table_test.value_1 = reference_table_test.value_1 AND colocated_table_test_2.value_1 = reference_table_test.value_1;
 
 
-SET client_min_messages TO NOTICE;
 SET citus.log_multi_join_order TO FALSE;
 
 SET citus.shard_count TO DEFAULT;
@@ -674,7 +673,7 @@ SET citus.task_executor_type to "real-time";
 
 -- some INSERT .. SELECT queries that involve both hash distributed and reference tables
 
--- should error out since we're inserting into reference table where 
+-- should go via coordinator since we're inserting into reference table where 
 -- not all the participants are reference tables
 INSERT INTO
 	reference_table_test (value_1)
@@ -683,9 +682,9 @@ SELECT
 FROM
 	colocated_table_test, colocated_table_test_2
 WHERE
-	colocated_table_test.value_1 = colocated_table_test.value_1;
+	colocated_table_test.value_1 = colocated_table_test_2.value_1;
 
--- should error out, same as the above
+-- should go via coordinator, same as the above
 INSERT INTO
 	reference_table_test (value_1)
 SELECT
@@ -718,8 +717,7 @@ WHERE
 	colocated_table_test_2.value_2 = reference_table_test.value_2
 RETURNING value_1, value_2;
 
--- partition column value comes from reference table but still first error is
--- on data type mismatch
+-- partition column value comes from reference table, goes via coordinator
 INSERT INTO
 	colocated_table_test (value_1, value_2)
 SELECT
@@ -727,10 +725,8 @@ SELECT
 FROM
 	colocated_table_test_2, reference_table_test
 WHERE
-	colocated_table_test_2.value_4 = reference_table_test.value_4
-RETURNING value_1, value_2;
+	colocated_table_test_2.value_4 = reference_table_test.value_4;
 
--- partition column value comes from reference table which should error out
 INSERT INTO
 	colocated_table_test (value_1, value_2)
 SELECT
@@ -738,9 +734,9 @@ SELECT
 FROM
 	colocated_table_test_2, reference_table_test
 WHERE
-	colocated_table_test_2.value_4 = reference_table_test.value_4
-RETURNING value_1, value_2;
+	colocated_table_test_2.value_4 = reference_table_test.value_4;
 
+RESET client_min_messages;
 
 -- some tests for mark_tables_colocated
 -- should error out
