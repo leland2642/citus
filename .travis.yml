@@ -23,6 +23,8 @@ install:
   - install_uncrustify
   - install_pg
   - install_custom_pg
+  - /usr/lib/postgresql/$PGVERSION/bin/pg_config
+  - exit 1
   - apt-get download "postgresql-${PGVERSION}-hll=2.10.1.citus-1" && sudo dpkg --force-confold --force-confdef --force-all -i *hll*.deb
 before_script: citus_indent --quiet --check
 script: CFLAGS=-Werror pg_travis_multi_test check
